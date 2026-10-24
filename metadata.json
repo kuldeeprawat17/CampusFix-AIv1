@@ -1,0 +1,6 @@
+{
+  "name": "CampusFix AI",
+  "description": "Smart campus maintenance platform to report problems, eliminate duplicates, calculate Campus Impact Scores, and resolve issues collaboratively.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

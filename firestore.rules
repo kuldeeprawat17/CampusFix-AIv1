@@ -1,0 +1,83 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isMasterAdmin() {
+      return isSignedIn() && request.auth.token.email == 'kdeepsingh.rawat@gmail.com';
+    }
+
+    function isAdmin() {
+      return isMasterAdmin() || (isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Admins collection
+    match /admins/{userId} {
+      allow read: if isSignedIn();
+      allow write: if isMasterAdmin();
+    }
+
+    // Tickets collection
+    match /tickets/{ticketId} {
+      allow read: if isSignedIn();
+
+      allow create: if isSignedIn()
+        && isValidId(ticketId)
+        && incoming().title is string && incoming().title.size() <= 150
+        && incoming().description is string && incoming().description.size() <= 2000
+        && incoming().building is string && incoming().building.size() <= 80
+        && incoming().room is string && incoming().room.size() <= 50
+        && incoming().category is string
+        && incoming().status in ['reported', 'in_progress', 'resolved', 'verified_closed']
+        && incoming().authorId == request.auth.uid
+        && incoming().affectedCount is number
+        && incoming().impactScore is number;
+
+      // Allow updates for:
+      // 1) Admins (can update status, resolutionNotes, resolvedBy, impactScore, etc.)
+      // 2) Students supporting ticket ("I'm affected too") - affectedCount, affectedUserIds
+      // 3) Students verifying resolution - verifiedCount, unresolvedCount
+      // 4) Author modifying details while still reported
+      allow update: if isSignedIn() && (
+        isAdmin() ||
+        (
+          // Community support update
+          incoming().diff(existing()).affectedKeys().hasOnly(['affectedCount', 'affectedUserIds', 'impactScore', 'impactBreakdown', 'updatedAt'])
+        ) ||
+        (
+          // Community verification update
+          incoming().diff(existing()).affectedKeys().hasOnly(['verifiedCount', 'unresolvedCount', 'status', 'updatedAt'])
+        ) ||
+        (
+          // Author update if ticket is still in reported state
+          existing().authorId == request.auth.uid &&
+          existing().status == 'reported' &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['title', 'description', 'building', 'room', 'category', 'updatedAt'])
+        )
+      );
+
+      allow delete: if isAdmin() || (isSignedIn() && existing().authorId == request.auth.uid && existing().status == 'reported');
+    }
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "entities": {
+    "Ticket": {
+      "title": "Ticket",
+      "description": "A campus maintenance ticket reported by students or staff.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Ticket unique identifier" },
+        "title": { "type": "string", "maxLength": 150, "description": "Short summary of the issue" },
+        "description": { "type": "string", "maxLength": 2000, "description": "Detailed explanation of the problem" },
+        "building": { "type": "string", "maxLength": 80, "description": "Campus building name" },
+        "room": { "type": "string", "maxLength": 50, "description": "Room, lab, or area designation" },
+        "category": { "type": "string", "enum": ["electrical", "plumbing", "tech", "wifi", "furniture", "hvac", "safety", "other"], "description": "Maintenance category" },
+        "status": { "type": "string", "enum": ["reported", "in_progress", "resolved", "verified_closed"], "description": "Lifecycle state of the ticket" },
+        "safetySeverity": { "type": "number", "description": "Safety rating from 1 to 5" },
+        "affectedCount": { "type": "number", "description": "Number of students affected" },
+        "affectedUserIds": { "type": "array", "description": "IDs of users who confirmed being affected" },
+        "impactScore": { "type": "number", "description": "Calculated Campus Impact Score from 0 to 100" },
+        "authorId": { "type": "string", "description": "User ID of creator" },
+        "authorName": { "type": "string", "maxLength": 100, "description": "Display name of reporter" },
+        "authorEmail": { "type": "string", "maxLength": 150, "description": "Email address of reporter" },
+        "isAnonymous": { "type": "boolean", "description": "Whether the reporter chose anonymity" },
+        "resolutionNotes": { "type": "string", "maxLength": 1000, "description": "Notes from maintenance staff after fixing" },
+        "resolvedBy": { "type": "string", "maxLength": 100, "description": "Staff member who resolved the issue" },
+        "verifiedCount": { "type": "number", "description": "Number of students confirming resolution" },
+        "unresolvedCount": { "type": "number", "description": "Number of students reporting problem remains" },
+        "createdAt": { "type": "string", "description": "ISO timestamp of creation" },
+        "updatedAt": { "type": "string", "description": "ISO timestamp of last update" }
+      },
+      "required": ["title", "description", "building", "room", "category", "status", "safetySeverity", "affectedCount", "impactScore", "authorId"]
+    },
+    "Admin": {
+      "title": "Admin",
+      "description": "Administrator permission record",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "description": "Admin email" },
+        "role": { "type": "string", "description": "Role level" },
+        "assignedAt": { "type": "string", "description": "Timestamp when admin role was granted" }
+      },
+      "required": ["email", "role"]
+    }
+  },
+  "firestore": {
+    "/tickets/{ticketId}": {
+      "schema": "Ticket",
+      "description": "Collection of all campus maintenance tickets"
+    },
+    "/admins/{userId}": {
+      "schema": "Admin",
+      "description": "Admins authorized to manage and resolve campus tickets"
+    }
+  }
+}
